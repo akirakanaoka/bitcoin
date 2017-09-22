@@ -122,7 +122,8 @@ protected:
 
     bool Condition(const CBlockIndex* pindex, const Consensus::Params& params) const
     {
-        return (((pindex->nVersion & VERSIONBITS_TOP_MASK) == VERSIONBITS_TOP_BITS) && (pindex->nVersion & Mask(params)) != 0);
+        uint32_t top = pindex->nVersion & VERSIONBITS_TOP_MASK;
+        return ((top == VERSIONBITS_TOP_BITS || top == VERSIONBITS_TOP_BITS_LONG_TERM_BLOCK) && (pindex->nVersion & Mask(params)) != 0);
     }
 
 public:

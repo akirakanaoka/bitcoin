@@ -195,6 +195,7 @@ public:
     //! block header
     int nVersion;
     uint256 hashMerkleRoot;
+    uint256 hashArchive;
     unsigned int nTime;
     unsigned int nBits;
     unsigned int nNonce;
@@ -235,6 +236,7 @@ public:
 
         nVersion       = block.nVersion;
         hashMerkleRoot = block.hashMerkleRoot;
+        hashArchive    = block.hashArchive;
         nTime          = block.nTime;
         nBits          = block.nBits;
         nNonce         = block.nNonce;
@@ -265,6 +267,7 @@ public:
         if (pprev)
             block.hashPrevBlock = pprev->GetBlockHash();
         block.hashMerkleRoot = hashMerkleRoot;
+        block.hashArchive    = hashArchive;
         block.nTime          = nTime;
         block.nBits          = nBits;
         block.nNonce         = nNonce;
@@ -386,6 +389,7 @@ public:
         block.nVersion        = nVersion;
         block.hashPrevBlock   = hashPrev;
         block.hashMerkleRoot  = hashMerkleRoot;
+        block.hashArchive     = hashArchive;
         block.nTime           = nTime;
         block.nBits           = nBits;
         block.nNonce          = nNonce;

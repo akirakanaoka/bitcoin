@@ -24,6 +24,7 @@ public:
     int32_t nVersion;
     uint256 hashPrevBlock;
     uint256 hashMerkleRoot;
+    uint256 hashArchive;
     uint32_t nTime;
     uint32_t nBits;
     uint32_t nNonce;
@@ -40,6 +41,9 @@ public:
         READWRITE(this->nVersion);
         READWRITE(hashPrevBlock);
         READWRITE(hashMerkleRoot);
+        if (HasArchiveHash()) {
+            READWRITE(hashArchive);
+        }
         READWRITE(nTime);
         READWRITE(nBits);
         READWRITE(nNonce);
@@ -50,6 +54,7 @@ public:
         nVersion = 0;
         hashPrevBlock.SetNull();
         hashMerkleRoot.SetNull();
+        hashArchive.SetNull();
         nTime = 0;
         nBits = 0;
         nNonce = 0;
@@ -66,6 +71,8 @@ public:
     {
         return (int64_t)nTime;
     }
+
+    bool HasArchiveHash() const;
 };
 
 
@@ -110,6 +117,7 @@ public:
         block.nVersion       = nVersion;
         block.hashPrevBlock  = hashPrevBlock;
         block.hashMerkleRoot = hashMerkleRoot;
+        block.hashArchive    = hashArchive;
         block.nTime          = nTime;
         block.nBits          = nBits;
         block.nNonce         = nNonce;
