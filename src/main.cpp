@@ -2283,6 +2283,44 @@ int32_t ComputeBlockVersion(const CBlockIndex* pindexPrev, const Consensus::Para
     return nVersion;
 }
 
+uint256 ComputeArchiveHash(const CBlockIndex* pindexPrev, const Consensus::Params& params)
+{
+    int height = pindexPrev->nHeight + 1;
+
+    BOOST_FOREACH(const Consensus::ArchiveHashParams& p, params.vArchiveHashes)
+    {
+        int endHeight = p.nStartHeight + p.nBlocksPerHash * p.nBlocks;
+        if (p.nStartHeight <= height && height < endHeight)
+        {
+            int index = (height - p.nStartHeight) / p.nBlocksPerHash;
+            std::vector<const CBlockIndex*> blocks(p.nBlocksPerHash);
+
+            {
+                int archiveEnd = (index + 1) * p.nBlocksPerHash - 1;
+                const CBlockIndex* pindex = pindexPrev->GetAncestor(archiveEnd);
+
+                for (int i = 0; i < p.nBlocksPerHash; i++)
+                {
+                    blocks.push_back(pindex);
+                    pindex = pindex->pprev;
+                }
+            }
+
+            CHashWriter ss(SER_GETHASH, PROTOCOL_VERSION);
+            BOOST_REVERSE_FOREACH(const CBlockIndex* pindex, blocks)
+            {
+                CBlock block;
+                if (!ReadBlockFromDisk(block, pindex, params))
+                    return uint256(); // TODO
+                ss << block;
+            }
+            return ss.GetHash();
+        }
+    }
+
+    return uint256();
+}
+
 /**
  * Threshold condition checker that triggers when unknown versionbits are seen on the network.
  */

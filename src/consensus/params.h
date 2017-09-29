@@ -33,6 +33,12 @@ struct BIP9Deployment {
     int64_t nTimeout;
 };
 
+struct ArchiveHashParams {
+    int nStartHeight;
+    int nBlocksPerHash;
+    int nBlocks;
+};
+
 /**
  * Parameters that influence chain consensus.
  */
@@ -61,6 +67,8 @@ struct Params {
     int64_t nPowTargetSpacing;
     int64_t nPowTargetTimespan;
     int64_t DifficultyAdjustmentInterval() const { return nPowTargetTimespan / nPowTargetSpacing; }
+
+    std::vector<ArchiveHashParams> vArchiveHashes;
 };
 } // namespace Consensus
 
