@@ -18,7 +18,7 @@ uint256 CBlockHeader::GetHash() const
 
 bool CBlockHeader::HasArchiveHash() const
 {
-    return (nVersion & VERSIONBITS_TOP_MASK) == VERSIONBITS_TOP_BITS_LONG_TERM_BLOCK;
+    return nVersion & VERSIONBITS_TOP_BITS_ARCHIVE_HASH;
 }
 
 std::string CBlock::ToString() const

@@ -2293,7 +2293,7 @@ bool ComputeArchiveHash(const CBlockIndex* pindexPrev, const Consensus::Params& 
         if (p.nStartHeight <= height && height < endHeight)
         {
             int index = (height - p.nStartHeight) / p.nBlocksPerHash;
-            std::vector<const CBlockIndex*> blocks(p.nBlocksPerHash);
+            std::vector<const CBlockIndex*> blocks;
 
             {
                 int archiveEnd = (index + 1) * p.nBlocksPerHash - 1;
@@ -2781,7 +2781,7 @@ void static UpdateTip(CBlockIndex *pindexNew, const CChainParams& chainParams) {
         // Check the version of the last 100 blocks to see if we need to upgrade:
         for (int i = 0; i < 100 && pindex != NULL; i++)
         {
-            int32_t nExpectedVersion = ComputeBlockVersion(pindex->pprev, chainParams.GetConsensus());
+            int32_t nExpectedVersion = ComputeBlockVersion(pindex->pprev, chainParams.GetConsensus()) | VERSIONBITS_TOP_BITS_ARCHIVE_HASH;
             if (pindex->nVersion > VERSIONBITS_LAST_OLD_BLOCK_VERSION && (pindex->nVersion & ~nExpectedVersion) != 0)
                 ++nUpgraded;
             pindex = pindex->pprev;
