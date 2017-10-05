@@ -2283,7 +2283,7 @@ int32_t ComputeBlockVersion(const CBlockIndex* pindexPrev, const Consensus::Para
     return nVersion;
 }
 
-uint256 ComputeArchiveHash(const CBlockIndex* pindexPrev, const Consensus::Params& params)
+bool ComputeArchiveHash(const CBlockIndex* pindexPrev, const Consensus::Params& params, uint256& hash)
 {
     int height = pindexPrev->nHeight + 1;
 
@@ -2311,14 +2311,27 @@ uint256 ComputeArchiveHash(const CBlockIndex* pindexPrev, const Consensus::Param
             {
                 CBlock block;
                 if (!ReadBlockFromDisk(block, pindex, params))
-                    return uint256(); // TODO
+                    return false;
                 ss << block;
             }
-            return ss.GetHash();
+            hash = ss.GetHash();
+            return true;
         }
     }
 
-    return uint256();
+    hash = uint256();
+    return true;
+}
+
+bool CheckArchiveHash(const CBlockIndex* pindex, const Consensus::Params& params)
+{
+    uint256 hash;
+    if (!ComputeArchiveHash(pindex->pprev, params, hash))
+    {
+        return true;
+    }
+
+    return pindex->hashArchive == hash;
 }
 
 /**
@@ -2557,6 +2570,9 @@ bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockIndex* pin
         return state.DoS(100, false);
     int64_t nTime4 = GetTimeMicros(); nTimeVerify += nTime4 - nTime2;
     LogPrint("bench", "    - Verify %u txins: %.2fms (%.3fms/txin) [%.2fs]\n", nInputs - 1, 0.001 * (nTime4 - nTime2), nInputs <= 1 ? 0 : 0.001 * (nTime4 - nTime2) / (nInputs-1), nTimeVerify * 0.000001);
+
+    if (!CheckArchiveHash(pindex, chainparams.GetConsensus()))
+            return error("ConnectBlock(): CheckArchiveHash failed");
 
     if (fJustCheck)
         return true;

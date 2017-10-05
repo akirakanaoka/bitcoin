@@ -147,7 +147,8 @@ CBlockTemplate* BlockAssembler::CreateNewBlock(const CScript& scriptPubKeyIn)
     if (chainparams.MineBlocksOnDemand())
         pblock->nVersion = GetArg("-blockversion", pblock->nVersion);
 
-    pblock->hashArchive = ComputeArchiveHash(pindexPrev, chainparams.GetConsensus());
+    if (!ComputeArchiveHash(pindexPrev, chainparams.GetConsensus(), pblock->hashArchive))
+        throw std::runtime_error(strprintf("%s: ComputeArchiveHash failed: %s", __func__));
 
     pblock->nTime = GetAdjustedTime();
     const int64_t nMedianTimePast = pindexPrev->GetMedianTimePast();

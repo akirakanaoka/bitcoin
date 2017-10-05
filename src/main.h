@@ -518,7 +518,7 @@ extern VersionBitsCache versionbitscache;
  */
 int32_t ComputeBlockVersion(const CBlockIndex* pindexPrev, const Consensus::Params& params);
 
-uint256 ComputeArchiveHash(const CBlockIndex* pindexPrev, const Consensus::Params& params);
+bool ComputeArchiveHash(const CBlockIndex* pindexPrev, const Consensus::Params& params, uint256& hash);
 
 /** Reject codes greater or equal to this can be returned by AcceptToMemPool
  * for transactions, to signal internal conditions. They cannot and should not
