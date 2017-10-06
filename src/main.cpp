@@ -2289,10 +2289,10 @@ bool ComputeArchiveHash(const CBlockIndex* pindexPrev, const Consensus::Params& 
 
     BOOST_FOREACH(const Consensus::ArchiveHashParams& p, params.vArchiveHashes)
     {
-        int endHeight = p.nStartHeight + p.nBlocksPerHash * p.nBlocks;
+        int endHeight = p.nStartHeight + p.nBlocks;
         if (p.nStartHeight <= height && height < endHeight)
         {
-            int index = (height - p.nStartHeight) / p.nBlocksPerHash;
+            int index = height - p.nStartHeight;
             std::vector<const CBlockIndex*> blocks;
 
             {

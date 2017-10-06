@@ -378,6 +378,7 @@ public:
         READWRITE(this->nVersion);
         READWRITE(hashPrev);
         READWRITE(hashMerkleRoot);
+        READWRITE(hashArchive);
         READWRITE(nTime);
         READWRITE(nBits);
         READWRITE(nNonce);
