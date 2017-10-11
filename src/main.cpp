@@ -2280,6 +2280,10 @@ int32_t ComputeBlockVersion(const CBlockIndex* pindexPrev, const Consensus::Para
         }
     }
 
+    if (params.nNewPoWHashStartHeight >= 0 && pindexPrev->nHeight + 1 >= params.nNewPoWHashStartHeight) {
+        nVersion |= VERSIONBITS_TOP_BITS_NEW_POW_HASH;
+    }
+
     return nVersion;
 }
 
@@ -2468,6 +2472,13 @@ bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockIndex* pin
     if (IsWitnessEnabled(pindex->pprev, chainparams.GetConsensus())) {
         flags |= SCRIPT_VERIFY_WITNESS;
         flags |= SCRIPT_VERIFY_NULLDUMMY;
+    }
+
+    if ((chainparams.GetConsensus().nNewPoWHashStartHeight >= 0) &&
+        (pindex->nHeight >= chainparams.GetConsensus().nNewPoWHashStartHeight) &&
+        !(pindex->nVersion & VERSIONBITS_TOP_BITS_NEW_POW_HASH)) {
+        return state.DoS(100, error("ConnectBlock(): try to connect an old hashed block"),
+            REJECT_INVALID, "bad-new-pow-hash");
     }
 
     int64_t nTime2 = GetTimeMicros(); nTimeForks += nTime2 - nTime1;

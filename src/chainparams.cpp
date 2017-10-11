@@ -156,6 +156,7 @@ public:
                         //   (the tx=... number in the SetBestChain debug.log lines)
             60000.0     // * estimated number of transactions per day after checkpoint
         };
+        consensus.nNewPoWHashStartHeight = -1;
     }
 };
 static CMainParams mainParams;
@@ -236,6 +237,7 @@ public:
             300
         };
 
+        consensus.nNewPoWHashStartHeight = -1;
     }
 };
 static CTestNetParams testNetParams;
@@ -297,7 +299,9 @@ public:
             fTestnetToBeDeprecatedFieldRPC = true;
 
             // checkpointData is empty
-    }
+
+            consensus.nNewPoWHashStartHeight = -1;
+        }
 };
 static CBSafeNetParams bSafeParams;
 
@@ -370,6 +374,8 @@ public:
         archive.nBlocksPerHash = 10;
         archive.nBlocks = 20;
         consensus.vArchiveHashes.push_back(archive);
+
+        consensus.nNewPoWHashStartHeight = 250;
     }
 
     void UpdateBIP9Parameters(Consensus::DeploymentPos d, int64_t nStartTime, int64_t nTimeout)

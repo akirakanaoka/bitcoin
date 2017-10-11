@@ -69,6 +69,7 @@ struct Params {
     int64_t DifficultyAdjustmentInterval() const { return nPowTargetTimespan / nPowTargetSpacing; }
 
     std::vector<ArchiveHashParams> vArchiveHashes;
+    int nNewPoWHashStartHeight;
 };
 } // namespace Consensus
 

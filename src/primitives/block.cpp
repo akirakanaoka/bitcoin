@@ -13,6 +13,9 @@
 
 uint256 CBlockHeader::GetHash() const
 {
+    if (nVersion & VERSIONBITS_TOP_BITS_NEW_POW_HASH) {
+        return SerializeHashNew(*this);
+    }
     return SerializeHash(*this);
 }
 
