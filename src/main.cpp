@@ -2318,6 +2318,7 @@ bool ComputeArchiveHash(const CBlockIndex* pindexPrev, const Consensus::Params& 
                     return false;
                 ss << block;
             }
+            ss << blocks.front()->GetBlockHash();
             hash = ss.GetHash();
             return true;
         }
