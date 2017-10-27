@@ -72,9 +72,21 @@ void CTransaction::UpdateHash() const
     *const_cast<uint256*>(&hash) = SerializeHash(*this, SER_GETHASH, SERIALIZE_TRANSACTION_NO_WITNESS);
 }
 
-uint256 CTransaction::GetWitnessHash() const
+uint256 CTransaction::GetHash(bool fUseNewHash256) const {
+    if (fUseNewHash256) {
+        return SerializeHashNew(*this, SER_GETHASH, SERIALIZE_TRANSACTION_NO_WITNESS);
+    } else {
+        return hash;
+    }
+}
+
+uint256 CTransaction::GetWitnessHash(bool fUseNewHash256) const
 {
-    return SerializeHash(*this, SER_GETHASH, 0);
+    if (fUseNewHash256) {
+        return SerializeHashNew(*this, SER_GETHASH, 0);
+    } else {
+        return SerializeHash(*this, SER_GETHASH, 0);
+    }
 }
 
 CTransaction::CTransaction() : nVersion(CTransaction::CURRENT_VERSION), vin(), vout(), nLockTime(0) { }
@@ -135,7 +147,7 @@ std::string CTransaction::ToString() const
 {
     std::string str;
     str += strprintf("CTransaction(hash=%s, ver=%d, vin.size=%u, vout.size=%u, nLockTime=%u)\n",
-        GetHash().ToString().substr(0,10),
+        GetHash(false).ToString().substr(0,10),
         nVersion,
         vin.size(),
         vout.size(),

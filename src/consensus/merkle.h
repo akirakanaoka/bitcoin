@@ -12,9 +12,9 @@
 #include "primitives/block.h"
 #include "uint256.h"
 
-uint256 ComputeMerkleRoot(const std::vector<uint256>& leaves, bool* mutated = NULL);
-std::vector<uint256> ComputeMerkleBranch(const std::vector<uint256>& leaves, uint32_t position);
-uint256 ComputeMerkleRootFromBranch(const uint256& leaf, const std::vector<uint256>& branch, uint32_t position);
+uint256 ComputeMerkleRoot(const std::vector<uint256>& leaves, bool useNewHash256, bool* mutated = NULL);
+std::vector<uint256> ComputeMerkleBranch(const std::vector<uint256>& leaves, uint32_t position, bool useNewHash256);
+uint256 ComputeMerkleRootFromBranch(const uint256& leaf, const std::vector<uint256>& branch, uint32_t position, bool useNewHash256);
 
 /*
  * Compute the Merkle root of the transactions in a block.
