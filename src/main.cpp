@@ -2280,7 +2280,7 @@ int32_t ComputeBlockVersion(const CBlockIndex* pindexPrev, const Consensus::Para
         }
     }
 
-    if (params.nNewPoWHashStartHeight >= 0 && pindexPrev->nHeight + 1 >= params.nNewPoWHashStartHeight) {
+    if (params.nNewPoWHashStartHeight >= 0 && pindexPrev && pindexPrev->nHeight + 1 >= params.nNewPoWHashStartHeight) {
         nVersion |= VERSIONBITS_TOP_BITS_NEW_POW_HASH;
     }
 
