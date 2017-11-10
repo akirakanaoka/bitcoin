@@ -195,7 +195,7 @@ public:
     //! block header
     int nVersion;
     uint256 hashMerkleRoot;
-    uint256 hashArchive;
+    CArchiveHash archive;
     unsigned int nTime;
     unsigned int nBits;
     unsigned int nNonce;
@@ -220,6 +220,8 @@ public:
 
         nVersion       = 0;
         hashMerkleRoot = uint256();
+        archive.hashHeader = uint256();
+        archive.hashMerkleRoot = uint256();
         nTime          = 0;
         nBits          = 0;
         nNonce         = 0;
@@ -236,7 +238,7 @@ public:
 
         nVersion       = block.nVersion;
         hashMerkleRoot = block.hashMerkleRoot;
-        hashArchive    = block.hashArchive;
+        archive        = block.archive;
         nTime          = block.nTime;
         nBits          = block.nBits;
         nNonce         = block.nNonce;
@@ -267,7 +269,7 @@ public:
         if (pprev)
             block.hashPrevBlock = pprev->GetBlockHash();
         block.hashMerkleRoot = hashMerkleRoot;
-        block.hashArchive    = hashArchive;
+        block.archive        = archive;
         block.nTime          = nTime;
         block.nBits          = nBits;
         block.nNonce         = nNonce;
@@ -378,7 +380,9 @@ public:
         READWRITE(this->nVersion);
         READWRITE(hashPrev);
         READWRITE(hashMerkleRoot);
-        READWRITE(hashArchive);
+        if (GetBlockHeader().HasArchiveHash()) {
+            READWRITE(archive);
+        }
         READWRITE(nTime);
         READWRITE(nBits);
         READWRITE(nNonce);
@@ -390,7 +394,7 @@ public:
         block.nVersion        = nVersion;
         block.hashPrevBlock   = hashPrev;
         block.hashMerkleRoot  = hashMerkleRoot;
-        block.hashArchive     = hashArchive;
+        block.archive         = archive;
         block.nTime           = nTime;
         block.nBits           = nBits;
         block.nNonce          = nNonce;

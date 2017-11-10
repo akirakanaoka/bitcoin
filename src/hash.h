@@ -198,6 +198,7 @@ public:
 };
 
 typedef CHashWriterT<CHash256> CHashWriter;
+typedef CHashWriterT<CHash256New> CHashWriterNew;
 
 /** Compute the 256-bit hash of an object's serialization. */
 template<typename T>

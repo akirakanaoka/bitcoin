@@ -10,6 +10,22 @@
 #include "serialize.h"
 #include "uint256.h"
 
+struct CArchiveHash
+{
+    uint256 hashHeader;
+    uint256 hashMerkleRoot;
+
+    CArchiveHash() {}
+
+    ADD_SERIALIZE_METHODS;
+    
+    template <typename Stream, typename Operation>
+    inline void SerializationOp(Stream& s, Operation ser_action, int nType, int nVersion) {
+        READWRITE(hashHeader);
+        READWRITE(hashMerkleRoot);
+    }
+};
+
 /** Nodes collect new transactions into a block, hash them into a hash tree,
  * and scan through nonce values to make the block's hash satisfy proof-of-work
  * requirements.  When they solve the proof-of-work, they broadcast the block
@@ -24,7 +40,7 @@ public:
     int32_t nVersion;
     uint256 hashPrevBlock;
     uint256 hashMerkleRoot;
-    uint256 hashArchive;
+    CArchiveHash archive;
     uint32_t nTime;
     uint32_t nBits;
     uint32_t nNonce;
@@ -42,7 +58,7 @@ public:
         READWRITE(hashPrevBlock);
         READWRITE(hashMerkleRoot);
         if (HasArchiveHash()) {
-            READWRITE(hashArchive);
+            READWRITE(archive);
         }
         READWRITE(nTime);
         READWRITE(nBits);
@@ -54,7 +70,8 @@ public:
         nVersion = 0;
         hashPrevBlock.SetNull();
         hashMerkleRoot.SetNull();
-        hashArchive.SetNull();
+        archive.hashHeader.SetNull();
+        archive.hashMerkleRoot.SetNull();
         nTime = 0;
         nBits = 0;
         nNonce = 0;
@@ -117,7 +134,7 @@ public:
         block.nVersion       = nVersion;
         block.hashPrevBlock  = hashPrevBlock;
         block.hashMerkleRoot = hashMerkleRoot;
-        block.hashArchive    = hashArchive;
+        block.archive        = archive;
         block.nTime          = nTime;
         block.nBits          = nBits;
         block.nNonce         = nNonce;

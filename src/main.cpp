@@ -2287,9 +2287,12 @@ int32_t ComputeBlockVersion(const CBlockIndex* pindexPrev, const Consensus::Para
     return nVersion;
 }
 
-bool ComputeArchiveHash(const CBlockIndex* pindexPrev, const Consensus::Params& params, uint256& hash)
+bool ComputeArchiveHash(const CBlockIndex* pindexPrev, const Consensus::Params& params, bool fHeader, bool fTx, CArchiveHash& hash)
 {
     int height = pindexPrev->nHeight + 1;
+
+    hash.hashHeader = uint256();
+    hash.hashMerkleRoot = uint256();
 
     BOOST_FOREACH(const Consensus::ArchiveHashParams& p, params.vArchiveHashes)
     {
@@ -2310,33 +2313,52 @@ bool ComputeArchiveHash(const CBlockIndex* pindexPrev, const Consensus::Params& 
                 }
             }
 
-            CHashWriter ss(SER_GETHASH, PROTOCOL_VERSION);
-            BOOST_REVERSE_FOREACH(const CBlockIndex* pindex, blocks)
-            {
-                CBlock block;
-                if (!ReadBlockFromDisk(block, pindex, params))
-                    return false;
-                ss << block;
+            if (fHeader) {
+                CHashWriterNew ss(SER_GETHASH, PROTOCOL_VERSION);
+                BOOST_REVERSE_FOREACH(const CBlockIndex* pindex, blocks)
+                {
+                    ss << pindex->GetBlockHeader();
+                }
+                ss << blocks.front()->GetBlockHash();
+                hash.hashHeader = ss.GetHash();
             }
-            ss << blocks.front()->GetBlockHash();
-            hash = ss.GetHash();
+
+            if (fTx) {
+                std::vector<uint256>& leaves;
+                std::vector<uint256>& leavesWit;
+                
+                BOOST_REVERSE_FOREACH(const CBlockIndex* pindex, blocks)
+                {
+                    CBlock block;
+                    if (!ReadBlockFromDisk(block, pindex, params))
+                        return false;
+                    BOOST_FOREACH(const CTransaction& tx, block.vtx)
+                    {
+                        leaves.push_back(tx.GetHash(true));
+                        leavesWit.push_back(tx.GetWitnessHash(true));
+                    }
+                }
+                hash.hashMerkleRoot = ComputeMerkleRoot(leaves, true, NULL);
+                hash.hashWitnessMerkleRoot = ComputeMerkleRoot(leavesWit, true, NULL);
+            }
             return true;
         }
     }
 
-    hash = uint256();
     return true;
 }
 
 bool CheckArchiveHash(const CBlockIndex* pindex, const Consensus::Params& params)
 {
-    uint256 hash;
-    if (!ComputeArchiveHash(pindex->pprev, params, hash))
+    CArchiveHash hash;
+    if (!ComputeArchiveHash(pindex->pprev, params, true, true, hash))
     {
         return true;
     }
 
-    return pindex->hashArchive == hash;
+    return pindex->hash.hashHeader == hash.hashHeader
+        && pindex->hash.hashMerkleRoot == hash.hashMerkleRoot
+        && pindex->hash.hashWitnessMerkleRoot == hash.hashWitnessMerkleRoot;
 }
 
 /**
