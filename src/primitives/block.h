@@ -14,6 +14,7 @@ struct CArchiveHash
 {
     uint256 hashHeader;
     uint256 hashMerkleRoot;
+    uint256 hashWitnessMerkleRoot;
 
     CArchiveHash() {}
 
@@ -23,6 +24,7 @@ struct CArchiveHash
     inline void SerializationOp(Stream& s, Operation ser_action, int nType, int nVersion) {
         READWRITE(hashHeader);
         READWRITE(hashMerkleRoot);
+        READWRITE(hashWitnessMerkleRoot);
     }
 };
 
@@ -72,6 +74,7 @@ public:
         hashMerkleRoot.SetNull();
         archive.hashHeader.SetNull();
         archive.hashMerkleRoot.SetNull();
+        archive.hashWitnessMerkleRoot.SetNull();
         nTime = 0;
         nBits = 0;
         nNonce = 0;

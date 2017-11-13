@@ -222,6 +222,7 @@ public:
         hashMerkleRoot = uint256();
         archive.hashHeader = uint256();
         archive.hashMerkleRoot = uint256();
+        archive.hashWitnessMerkleRoot = uint256();
         nTime          = 0;
         nBits          = 0;
         nNonce         = 0;

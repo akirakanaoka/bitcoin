@@ -2287,12 +2287,14 @@ int32_t ComputeBlockVersion(const CBlockIndex* pindexPrev, const Consensus::Para
     return nVersion;
 }
 
-bool ComputeArchiveHash(const CBlockIndex* pindexPrev, const Consensus::Params& params, bool fHeader, bool fTx, CArchiveHash& hash)
+bool ComputeArchiveHash(const CBlockIndex* pindexPrev, const Consensus::Params& params, bool fHeader, bool fTx, CArchiveHash& hash, bool& haveArchive)
 {
     int height = pindexPrev->nHeight + 1;
 
     hash.hashHeader = uint256();
     hash.hashMerkleRoot = uint256();
+    hash.hashWitnessMerkleRoot = uint256();
+    haveArchive = false;
 
     BOOST_FOREACH(const Consensus::ArchiveHashParams& p, params.vArchiveHashes)
     {
@@ -2324,8 +2326,8 @@ bool ComputeArchiveHash(const CBlockIndex* pindexPrev, const Consensus::Params& 
             }
 
             if (fTx) {
-                std::vector<uint256>& leaves;
-                std::vector<uint256>& leavesWit;
+                std::vector<uint256> leaves;
+                std::vector<uint256> leavesWit;
                 
                 BOOST_REVERSE_FOREACH(const CBlockIndex* pindex, blocks)
                 {
@@ -2341,6 +2343,7 @@ bool ComputeArchiveHash(const CBlockIndex* pindexPrev, const Consensus::Params& 
                 hash.hashMerkleRoot = ComputeMerkleRoot(leaves, true, NULL);
                 hash.hashWitnessMerkleRoot = ComputeMerkleRoot(leavesWit, true, NULL);
             }
+            haveArchive = true;
             return true;
         }
     }
@@ -2351,14 +2354,15 @@ bool ComputeArchiveHash(const CBlockIndex* pindexPrev, const Consensus::Params& 
 bool CheckArchiveHash(const CBlockIndex* pindex, const Consensus::Params& params)
 {
     CArchiveHash hash;
-    if (!ComputeArchiveHash(pindex->pprev, params, true, true, hash))
+    bool haveArchive;
+    if (!ComputeArchiveHash(pindex->pprev, params, true, true, hash, haveArchive))
     {
         return true;
     }
 
-    return pindex->hash.hashHeader == hash.hashHeader
-        && pindex->hash.hashMerkleRoot == hash.hashMerkleRoot
-        && pindex->hash.hashWitnessMerkleRoot == hash.hashWitnessMerkleRoot;
+    return pindex->archive.hashHeader == hash.hashHeader
+        && pindex->archive.hashMerkleRoot == hash.hashMerkleRoot
+        && pindex->archive.hashWitnessMerkleRoot == hash.hashWitnessMerkleRoot;
 }
 
 /**

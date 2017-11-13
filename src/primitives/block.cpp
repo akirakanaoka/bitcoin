@@ -27,13 +27,14 @@ bool CBlockHeader::HasArchiveHash() const
 std::string CBlock::ToString() const
 {
     std::stringstream s;
-    s << strprintf("CBlock(hash=%s, ver=0x%08x, hashPrevBlock=%s, hashMerkleRoot=%s, hashArchive=%s+%s, nTime=%u, nBits=%08x, nNonce=%u, vtx=%u)\n",
+    s << strprintf("CBlock(hash=%s, ver=0x%08x, hashPrevBlock=%s, hashMerkleRoot=%s, hashArchive=%s+%s+%s, nTime=%u, nBits=%08x, nNonce=%u, vtx=%u)\n",
         GetHash().ToString(),
         nVersion,
         hashPrevBlock.ToString(),
         hashMerkleRoot.ToString(),
         archive.hashHeader.ToString(),
         archive.hashMerkleRoot.ToString(),
+        archive.hashWitnessMerkleRoot.ToString(),
         nTime, nBits, nNonce,
         vtx.size());
     for (unsigned int i = 0; i < vtx.size(); i++)
