@@ -301,6 +301,13 @@ public:
             // checkpointData is empty
 
             consensus.nNewPoWHashStartHeight = -1;
+
+            // Consensus::ArchiveHashParams archive;
+            // archive.nStartHeight = 300;
+            // archive.nBlocksPerHash = 10;
+            // archive.nBlocks = 20;
+            // consensus.vArchiveHashes.push_back(archive);
+    
         }
 };
 static CBSafeNetParams bSafeParams;
