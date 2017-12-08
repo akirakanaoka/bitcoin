@@ -2280,7 +2280,89 @@ int32_t ComputeBlockVersion(const CBlockIndex* pindexPrev, const Consensus::Para
         }
     }
 
+    if (params.nNewPoWHashStartHeight >= 0 && pindexPrev && pindexPrev->nHeight + 1 >= params.nNewPoWHashStartHeight) {
+        nVersion |= VERSIONBITS_TOP_BITS_NEW_POW_HASH;
+    }
+
     return nVersion;
+}
+
+bool ComputeArchiveHash(const CBlockIndex* pindexPrev, const Consensus::Params& params, bool fHeader, bool fTx, CArchiveHash& hash, bool& haveArchive)
+{
+    int height = pindexPrev->nHeight + 1;
+
+    hash.hashHeader = uint256();
+    hash.hashMerkleRoot = uint256();
+    hash.hashWitnessMerkleRoot = uint256();
+    haveArchive = false;
+
+    BOOST_FOREACH(const Consensus::ArchiveHashParams& p, params.vArchiveHashes)
+    {
+        int endHeight = p.nStartHeight + p.nBlocks;
+        if (p.nStartHeight <= height && height < endHeight)
+        {
+            int index = height - p.nStartHeight;
+            std::vector<const CBlockIndex*> blocks;
+
+            {
+                int archiveEnd = (index + 1) * p.nBlocksPerHash - 1;
+                const CBlockIndex* pindex = pindexPrev->GetAncestor(archiveEnd);
+
+                for (int i = 0; i < p.nBlocksPerHash; i++)
+                {
+                    blocks.push_back(pindex);
+                    pindex = pindex->pprev;
+                }
+            }
+
+            if (fHeader) {
+                CHashWriterNew ss(SER_GETHASH, PROTOCOL_VERSION);
+                BOOST_REVERSE_FOREACH(const CBlockIndex* pindex, blocks)
+                {
+                    ss << pindex->GetBlockHeader();
+                }
+                ss << blocks.front()->GetBlockHash();
+                hash.hashHeader = ss.GetHash();
+            }
+
+            if (fTx) {
+                std::vector<uint256> leaves;
+                std::vector<uint256> leavesWit;
+                
+                BOOST_REVERSE_FOREACH(const CBlockIndex* pindex, blocks)
+                {
+                    CBlock block;
+                    if (!ReadBlockFromDisk(block, pindex, params))
+                        return false;
+                    BOOST_FOREACH(const CTransaction& tx, block.vtx)
+                    {
+                        leaves.push_back(tx.GetHash(true));
+                        leavesWit.push_back(tx.GetWitnessHash(true));
+                    }
+                }
+                hash.hashMerkleRoot = ComputeMerkleRoot(leaves, true, NULL);
+                hash.hashWitnessMerkleRoot = ComputeMerkleRoot(leavesWit, true, NULL);
+            }
+            haveArchive = true;
+            return true;
+        }
+    }
+
+    return true;
+}
+
+bool CheckArchiveHash(const CBlockIndex* pindex, const Consensus::Params& params)
+{
+    CArchiveHash hash;
+    bool haveArchive;
+    if (!ComputeArchiveHash(pindex->pprev, params, true, true, hash, haveArchive))
+    {
+        return true;
+    }
+
+    return pindex->archive.hashHeader == hash.hashHeader
+        && pindex->archive.hashMerkleRoot == hash.hashMerkleRoot
+        && pindex->archive.hashWitnessMerkleRoot == hash.hashWitnessMerkleRoot;
 }
 
 /**
@@ -2419,6 +2501,13 @@ bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockIndex* pin
         flags |= SCRIPT_VERIFY_NULLDUMMY;
     }
 
+    if ((chainparams.GetConsensus().nNewPoWHashStartHeight >= 0) &&
+        (pindex->nHeight >= chainparams.GetConsensus().nNewPoWHashStartHeight) &&
+        !(pindex->nVersion & VERSIONBITS_TOP_BITS_NEW_POW_HASH)) {
+        return state.DoS(100, error("ConnectBlock(): try to connect an old hashed block"),
+            REJECT_INVALID, "bad-new-pow-hash");
+    }
+
     int64_t nTime2 = GetTimeMicros(); nTimeForks += nTime2 - nTime1;
     LogPrint("bench", "    - Fork checks: %.2fms [%.2fs]\n", 0.001 * (nTime2 - nTime1), nTimeForks * 0.000001);
 
@@ -2519,6 +2608,9 @@ bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockIndex* pin
         return state.DoS(100, false);
     int64_t nTime4 = GetTimeMicros(); nTimeVerify += nTime4 - nTime2;
     LogPrint("bench", "    - Verify %u txins: %.2fms (%.3fms/txin) [%.2fs]\n", nInputs - 1, 0.001 * (nTime4 - nTime2), nInputs <= 1 ? 0 : 0.001 * (nTime4 - nTime2) / (nInputs-1), nTimeVerify * 0.000001);
+
+    if (!CheckArchiveHash(pindex, chainparams.GetConsensus()))
+            return error("ConnectBlock(): CheckArchiveHash failed");
 
     if (fJustCheck)
         return true;
@@ -2727,7 +2819,7 @@ void static UpdateTip(CBlockIndex *pindexNew, const CChainParams& chainParams) {
         // Check the version of the last 100 blocks to see if we need to upgrade:
         for (int i = 0; i < 100 && pindex != NULL; i++)
         {
-            int32_t nExpectedVersion = ComputeBlockVersion(pindex->pprev, chainParams.GetConsensus());
+            int32_t nExpectedVersion = ComputeBlockVersion(pindex->pprev, chainParams.GetConsensus()) | VERSIONBITS_TOP_BITS_ARCHIVE_HASH;
             if (pindex->nVersion > VERSIONBITS_LAST_OLD_BLOCK_VERSION && (pindex->nVersion & ~nExpectedVersion) != 0)
                 ++nUpgraded;
             pindex = pindex->pprev;

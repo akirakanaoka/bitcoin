@@ -81,6 +81,13 @@ UniValue blockheaderToJSON(const CBlockIndex* blockindex)
     result.push_back(Pair("bits", strprintf("%08x", blockindex->nBits)));
     result.push_back(Pair("difficulty", GetDifficulty(blockindex)));
     result.push_back(Pair("chainwork", blockindex->nChainWork.GetHex()));
+    if (blockindex->GetBlockHeader().HasArchiveHash()) {
+        UniValue objArchive(UniValue::VOBJ);
+        objArchive.push_back(Pair("header", blockindex->archive.hashHeader.GetHex()));
+        objArchive.push_back(Pair("merkleroot", blockindex->archive.hashMerkleRoot.GetHex()));
+        objArchive.push_back(Pair("witnessmerkleroot", blockindex->archive.hashWitnessMerkleRoot.GetHex()));
+        result.push_back(Pair("archive", objArchive));   
+    }
 
     if (blockindex->pprev)
         result.push_back(Pair("previousblockhash", blockindex->pprev->GetBlockHash().GetHex()));
@@ -125,7 +132,14 @@ UniValue blockToJSON(const CBlock& block, const CBlockIndex* blockindex, bool tx
     result.push_back(Pair("bits", strprintf("%08x", block.nBits)));
     result.push_back(Pair("difficulty", GetDifficulty(blockindex)));
     result.push_back(Pair("chainwork", blockindex->nChainWork.GetHex()));
-
+    if (blockindex->GetBlockHeader().HasArchiveHash()) {
+        UniValue objArchive(UniValue::VOBJ);
+        objArchive.push_back(Pair("header", blockindex->archive.hashHeader.GetHex()));
+        objArchive.push_back(Pair("merkleroot", blockindex->archive.hashMerkleRoot.GetHex()));
+        objArchive.push_back(Pair("witnessmerkleroot", blockindex->archive.hashWitnessMerkleRoot.GetHex()));
+        result.push_back(Pair("archive", objArchive));   
+    }
+    
     if (blockindex->pprev)
         result.push_back(Pair("previousblockhash", blockindex->pprev->GetBlockHash().GetHex()));
     CBlockIndex *pnext = chainActive.Next(blockindex);

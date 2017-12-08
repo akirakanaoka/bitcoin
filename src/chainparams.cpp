@@ -156,6 +156,7 @@ public:
                         //   (the tx=... number in the SetBestChain debug.log lines)
             60000.0     // * estimated number of transactions per day after checkpoint
         };
+        consensus.nNewPoWHashStartHeight = -1;
     }
 };
 static CMainParams mainParams;
@@ -236,6 +237,7 @@ public:
             300
         };
 
+        consensus.nNewPoWHashStartHeight = -1;
     }
 };
 static CTestNetParams testNetParams;
@@ -297,7 +299,16 @@ public:
             fTestnetToBeDeprecatedFieldRPC = true;
 
             // checkpointData is empty
-    }
+
+            consensus.nNewPoWHashStartHeight = -1;
+
+            // Consensus::ArchiveHashParams archive;
+            // archive.nStartHeight = 300;
+            // archive.nBlocksPerHash = 10;
+            // archive.nBlocks = 20;
+            // consensus.vArchiveHashes.push_back(archive);
+    
+        }
 };
 static CBSafeNetParams bSafeParams;
 
@@ -364,6 +375,14 @@ public:
         base58Prefixes[SECRET_KEY] =     std::vector<unsigned char>(1,239);
         base58Prefixes[EXT_PUBLIC_KEY] = boost::assign::list_of(0x04)(0x35)(0x87)(0xCF).convert_to_container<std::vector<unsigned char> >();
         base58Prefixes[EXT_SECRET_KEY] = boost::assign::list_of(0x04)(0x35)(0x83)(0x94).convert_to_container<std::vector<unsigned char> >();
+
+        Consensus::ArchiveHashParams archive;
+        archive.nStartHeight = 300;
+        archive.nBlocksPerHash = 10;
+        archive.nBlocks = 20;
+        consensus.vArchiveHashes.push_back(archive);
+
+        consensus.nNewPoWHashStartHeight = 250;
     }
 
     void UpdateBIP9Parameters(Consensus::DeploymentPos d, int64_t nStartTime, int64_t nTimeout)

@@ -5,6 +5,7 @@
 #include "merkle.h"
 #include "hash.h"
 #include "utilstrencodings.h"
+#include "versionbits.h"
 
 /*     WARNING! If you're reading this because you're learning about crypto
        and/or designing a new system that will use merkle trees, keep in mind
@@ -43,7 +44,7 @@
 */
 
 /* This implements a constant-space merkle root/path calculator, limited to 2^32 leaves. */
-static void MerkleComputation(const std::vector<uint256>& leaves, uint256* proot, bool* pmutated, uint32_t branchpos, std::vector<uint256>* pbranch) {
+static void MerkleComputation(const std::vector<uint256>& leaves, uint256* proot, bool* pmutated, uint32_t branchpos, std::vector<uint256>* pbranch, bool fUseNewHash256) {
     if (pbranch) pbranch->clear();
     if (leaves.size() == 0) {
         if (pmutated) *pmutated = false;
@@ -80,7 +81,11 @@ static void MerkleComputation(const std::vector<uint256>& leaves, uint256* proot
                 }
             }
             mutated |= (inner[level] == h);
-            CHash256().Write(inner[level].begin(), 32).Write(h.begin(), 32).Finalize(h.begin());
+            if (fUseNewHash256) {
+                CHash256New().Write(inner[level].begin(), 32).Write(h.begin(), 32).Finalize(h.begin());
+            } else {
+                CHash256().Write(inner[level].begin(), 32).Write(h.begin(), 32).Finalize(h.begin());
+            }
         }
         // Store the resulting hash at inner position level.
         inner[level] = h;
@@ -106,7 +111,11 @@ static void MerkleComputation(const std::vector<uint256>& leaves, uint256* proot
         if (pbranch && matchh) {
             pbranch->push_back(h);
         }
-        CHash256().Write(h.begin(), 32).Write(h.begin(), 32).Finalize(h.begin());
+        if (fUseNewHash256) {
+            CHash256New().Write(h.begin(), 32).Write(h.begin(), 32).Finalize(h.begin());
+        } else {
+            CHash256().Write(h.begin(), 32).Write(h.begin(), 32).Finalize(h.begin());
+        }
         // Increment count to the value it would have if two entries at this
         // level had existed.
         count += (((uint32_t)1) << level);
@@ -121,7 +130,11 @@ static void MerkleComputation(const std::vector<uint256>& leaves, uint256* proot
                     matchh = true;
                 }
             }
-            CHash256().Write(inner[level].begin(), 32).Write(h.begin(), 32).Finalize(h.begin());
+            if (fUseNewHash256) {
+                CHash256New().Write(inner[level].begin(), 32).Write(h.begin(), 32).Finalize(h.begin());
+            } else {
+                CHash256().Write(inner[level].begin(), 32).Write(h.begin(), 32).Finalize(h.begin());
+            }
             level++;
         }
     }
@@ -130,25 +143,33 @@ static void MerkleComputation(const std::vector<uint256>& leaves, uint256* proot
     if (proot) *proot = h;
 }
 
-uint256 ComputeMerkleRoot(const std::vector<uint256>& leaves, bool* mutated) {
+uint256 ComputeMerkleRoot(const std::vector<uint256>& leaves, bool fUseNewHash256, bool* mutated) {
     uint256 hash;
-    MerkleComputation(leaves, &hash, mutated, -1, NULL);
+    MerkleComputation(leaves, &hash, mutated, -1, NULL, fUseNewHash256);
     return hash;
 }
 
-std::vector<uint256> ComputeMerkleBranch(const std::vector<uint256>& leaves, uint32_t position) {
+std::vector<uint256> ComputeMerkleBranch(const std::vector<uint256>& leaves, uint32_t position, bool fUseNewHash256) {
     std::vector<uint256> ret;
-    MerkleComputation(leaves, NULL, NULL, position, &ret);
+    MerkleComputation(leaves, NULL, NULL, position, &ret, fUseNewHash256);
     return ret;
 }
 
-uint256 ComputeMerkleRootFromBranch(const uint256& leaf, const std::vector<uint256>& vMerkleBranch, uint32_t nIndex) {
+uint256 ComputeMerkleRootFromBranch(const uint256& leaf, const std::vector<uint256>& vMerkleBranch, uint32_t nIndex, bool fUseNewHash256) {
     uint256 hash = leaf;
     for (std::vector<uint256>::const_iterator it = vMerkleBranch.begin(); it != vMerkleBranch.end(); ++it) {
         if (nIndex & 1) {
-            hash = Hash(BEGIN(*it), END(*it), BEGIN(hash), END(hash));
+            if (fUseNewHash256) {
+                hash = HashNew(BEGIN(*it), END(*it), BEGIN(hash), END(hash));
+            } else {
+                hash = Hash(BEGIN(*it), END(*it), BEGIN(hash), END(hash));
+            }
         } else {
-            hash = Hash(BEGIN(hash), END(hash), BEGIN(*it), END(*it));
+            if (fUseNewHash256) {
+                hash = HashNew(BEGIN(hash), END(hash), BEGIN(*it), END(*it));
+            } else {
+                hash = Hash(BEGIN(hash), END(hash), BEGIN(*it), END(*it));
+            }
         }
         nIndex >>= 1;
     }
@@ -157,31 +178,34 @@ uint256 ComputeMerkleRootFromBranch(const uint256& leaf, const std::vector<uint2
 
 uint256 BlockMerkleRoot(const CBlock& block, bool* mutated)
 {
+    bool fUseNewHash256 = block.nVersion & VERSIONBITS_TOP_BITS_NEW_POW_HASH;
     std::vector<uint256> leaves;
     leaves.resize(block.vtx.size());
     for (size_t s = 0; s < block.vtx.size(); s++) {
-        leaves[s] = block.vtx[s].GetHash();
+        leaves[s] = block.vtx[s].GetHash(fUseNewHash256);
     }
-    return ComputeMerkleRoot(leaves, mutated);
+    return ComputeMerkleRoot(leaves, fUseNewHash256, mutated);
 }
 
 uint256 BlockWitnessMerkleRoot(const CBlock& block, bool* mutated)
 {
+    bool fUseNewHash256 = block.nVersion & VERSIONBITS_TOP_BITS_NEW_POW_HASH;
     std::vector<uint256> leaves;
     leaves.resize(block.vtx.size());
     leaves[0].SetNull(); // The witness hash of the coinbase is 0.
     for (size_t s = 1; s < block.vtx.size(); s++) {
-        leaves[s] = block.vtx[s].GetWitnessHash();
+        leaves[s] = block.vtx[s].GetWitnessHash(fUseNewHash256);
     }
-    return ComputeMerkleRoot(leaves, mutated);
+    return ComputeMerkleRoot(leaves, fUseNewHash256, mutated);
 }
 
 std::vector<uint256> BlockMerkleBranch(const CBlock& block, uint32_t position)
 {
+    bool fUseNewHash256 = block.nVersion & VERSIONBITS_TOP_BITS_NEW_POW_HASH;
     std::vector<uint256> leaves;
     leaves.resize(block.vtx.size());
     for (size_t s = 0; s < block.vtx.size(); s++) {
-        leaves[s] = block.vtx[s].GetHash();
+        leaves[s] = block.vtx[s].GetHash(fUseNewHash256);
     }
-    return ComputeMerkleBranch(leaves, position);
+    return ComputeMerkleBranch(leaves, position, fUseNewHash256);
 }

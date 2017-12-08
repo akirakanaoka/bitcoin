@@ -12,6 +12,10 @@
 static const int32_t VERSIONBITS_LAST_OLD_BLOCK_VERSION = 4;
 /** What bits to set in version for versionbits blocks */
 static const int32_t VERSIONBITS_TOP_BITS = 0x20000000UL;
+/** What bits to set in version for versionbits blocks with archive hash */
+static const int32_t VERSIONBITS_TOP_BITS_ARCHIVE_HASH = 0x01000000UL;
+/** What bits to set in version for versionbits blocks with new PoW hash */
+static const int32_t VERSIONBITS_TOP_BITS_NEW_POW_HASH = 0x02000000UL;
 /** What bitmask determines whether versionbits is in use */
 static const int32_t VERSIONBITS_TOP_MASK = 0xE0000000UL;
 /** Total bits available for versionbits */

@@ -396,12 +396,10 @@ public:
         return vin.empty() && vout.empty();
     }
 
-    const uint256& GetHash() const {
-        return hash;
-    }
+    uint256 GetHash(bool fUseNewHash256 = false) const;
 
     // Compute a hash that includes both transaction and witness data
-    uint256 GetWitnessHash() const;
+    uint256 GetWitnessHash(bool fUseNewHash256) const;
 
     // Return sum of txouts.
     CAmount GetValueOut() const;
