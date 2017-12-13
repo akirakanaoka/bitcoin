@@ -62,6 +62,8 @@ protected:
     /** flag set when encountering invalid data */
     bool fBad;
 
+    bool fNewHash;
+
     /** helper function to efficiently calculate the number of nodes at given height in the merkle tree */
     unsigned int CalcTreeWidth(int height) {
         return (nTransactions+(1 << height)-1) >> height;
@@ -105,7 +107,7 @@ public:
     }
 
     /** Construct a partial merkle tree from a list of transaction ids, and a mask that selects a subset of them */
-    CPartialMerkleTree(const std::vector<uint256> &vTxid, const std::vector<bool> &vMatch);
+    CPartialMerkleTree(const std::vector<uint256> &vTxid, const std::vector<bool> &vMatch, bool fNewHash);
 
     CPartialMerkleTree();
 

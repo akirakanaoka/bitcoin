@@ -8,12 +8,14 @@
 #include "hash.h"
 #include "consensus/consensus.h"
 #include "utilstrencodings.h"
+#include "versionbits.h"
 
 using namespace std;
 
 CMerkleBlock::CMerkleBlock(const CBlock& block, CBloomFilter& filter)
 {
     header = block.GetBlockHeader();
+    bool fNewHash = block.nVersion & VERSIONBITS_TOP_BITS_NEW_POW_HASH;
 
     vector<bool> vMatch;
     vector<uint256> vHashes;
@@ -31,15 +33,16 @@ CMerkleBlock::CMerkleBlock(const CBlock& block, CBloomFilter& filter)
         }
         else
             vMatch.push_back(false);
-        vHashes.push_back(hash);
+        vHashes.push_back(block.vtx[i].GetHash(fNewHash));
     }
 
-    txn = CPartialMerkleTree(vHashes, vMatch);
+    txn = CPartialMerkleTree(vHashes, vMatch, fNewHash);
 }
 
 CMerkleBlock::CMerkleBlock(const CBlock& block, const std::set<uint256>& txids)
 {
     header = block.GetBlockHeader();
+    bool fNewHash = block.nVersion & VERSIONBITS_TOP_BITS_NEW_POW_HASH;
 
     vector<bool> vMatch;
     vector<uint256> vHashes;
@@ -54,10 +57,10 @@ CMerkleBlock::CMerkleBlock(const CBlock& block, const std::set<uint256>& txids)
             vMatch.push_back(true);
         else
             vMatch.push_back(false);
-        vHashes.push_back(hash);
+        vHashes.push_back(block.vtx[i].GetHash(fNewHash));
     }
 
-    txn = CPartialMerkleTree(vHashes, vMatch);
+    txn = CPartialMerkleTree(vHashes, vMatch, fNewHash);
 }
 
 uint256 CPartialMerkleTree::CalcHash(int height, unsigned int pos, const std::vector<uint256> &vTxid) {
@@ -73,7 +76,11 @@ uint256 CPartialMerkleTree::CalcHash(int height, unsigned int pos, const std::ve
         else
             right = left;
         // combine subhashes
-        return Hash(BEGIN(left), END(left), BEGIN(right), END(right));
+        if (fNewHash) {
+            return HashNew(BEGIN(left), END(left), BEGIN(right), END(right));            
+        } else {
+            return Hash(BEGIN(left), END(left), BEGIN(right), END(right));
+        }
     }
 }
 
@@ -129,11 +136,15 @@ uint256 CPartialMerkleTree::TraverseAndExtract(int height, unsigned int pos, uns
             right = left;
         }
         // and combine them before returning
-        return Hash(BEGIN(left), END(left), BEGIN(right), END(right));
+        if (fNewHash) {
+            return HashNew(BEGIN(left), END(left), BEGIN(right), END(right));            
+        } else {
+            return Hash(BEGIN(left), END(left), BEGIN(right), END(right));
+        }
     }
 }
 
-CPartialMerkleTree::CPartialMerkleTree(const std::vector<uint256> &vTxid, const std::vector<bool> &vMatch) : nTransactions(vTxid.size()), fBad(false) {
+CPartialMerkleTree::CPartialMerkleTree(const std::vector<uint256> &vTxid, const std::vector<bool> &vMatch, bool fNewHash) : nTransactions(vTxid.size()), fBad(false), fNewHash(fNewHash) {
     // reset state
     vBits.clear();
     vHash.clear();
